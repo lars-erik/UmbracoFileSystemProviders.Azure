@@ -1,12 +1,7 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="AzureBlobFileSystemRelativeTests.cs" company="James Jackson-South">
-//   Copyright (c) James Jackson-South and contributors.
-//   Licensed under the Apache License, Version 2.0.
+﻿// <copyright file="AzureBlobFileSystemRelativeTests.cs" company="James Jackson-South and contributors">
+// Copyright (c) James Jackson-South and contributors. All rights reserved.
+// Licensed under the Apache License, Version 2.0.
 // </copyright>
-// <summary>
-//   The <see cref="AzureBlobFileSystem" /> relative tests.
-// </summary>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace Our.Umbraco.FileSystemProviders.Azure.Tests
 {
@@ -28,10 +23,10 @@ namespace Our.Umbraco.FileSystemProviders.Azure.Tests
             AzureBlobFileSystem provider = this.CreateAzureBlobFileSystem();
 
             // Act
-            string actual = provider.GetUrl("1010/media.jpg");
+            string actual = provider.GetUrl("110/image.jpg");
 
             // Assert
-            Assert.AreEqual("/media/1010/media.jpg", actual);
+            Assert.AreEqual($"/{this.ContainerName}/110/image.jpg", actual);
         }
 
         /// <summary>
@@ -45,10 +40,10 @@ namespace Our.Umbraco.FileSystemProviders.Azure.Tests
             AzureBlobFileSystem provider = this.CreateAzureBlobFileSystem();
 
             // Act
-            string actual = provider.GetUrl("media/1010/media.jpg");
+            string actual = provider.GetUrl($"{this.ContainerName}/110/image.jpg");
 
             // Assert
-            Assert.AreEqual("/media/1010/media.jpg", actual);
+            Assert.AreEqual($"/{this.ContainerName}/110/image.jpg", actual);
         }
     }
 }

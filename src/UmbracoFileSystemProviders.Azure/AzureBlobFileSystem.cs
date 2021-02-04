@@ -1,14 +1,13 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="AzureBlobFileSystem.cs" company="James Jackson-South">
-//   Copyright (c) James Jackson-South and contributors.
-//   Licensed under the Apache License, Version 2.0.
+﻿// <copyright file="AzureBlobFileSystem.cs" company="James Jackson-South, Jeavon Leopold, and contributors">
+// Copyright (c) James Jackson-South, Jeavon Leopold, and contributors. All rights reserved.
+// Licensed under the Apache License, Version 2.0.
 // </copyright>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace Our.Umbraco.FileSystemProviders.Azure
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.IO;
 
     using global::Umbraco.Core.IO;
@@ -19,13 +18,43 @@ namespace Our.Umbraco.FileSystemProviders.Azure
     public class AzureBlobFileSystem : IFileSystem
     {
         /// <summary>
+        /// The configuration key for determining the connection string.
+        /// </summary>
+        private const string ConnectionStringKey = Constants.Configuration.ConnectionStringKey;
+
+        /// <summary>
+        /// The configuration key for determining the container name.
+        /// </summary>
+        private const string ContainerNameKey = Constants.Configuration.ContainerNameKey;
+
+        /// <summary>
+        /// The configuration key for determining the root url.
+        /// </summary>
+        private const string RootUrlKey = Constants.Configuration.RootUrlKey;
+
+        /// <summary>
+        /// The configuration key for determining the maximum days to cache values.
+        /// </summary>
+        private const string MaxDaysKey = Constants.Configuration.MaxDaysKey;
+
+        /// <summary>
+        /// The configuration key for determining whether the path provider should use the default root.
+        /// </summary>
+        private const string UseDefaultRootKey = Constants.Configuration.UseDefaultRouteKey;
+
+        /// <summary>
+        /// The configuration key for determining whether the container should be private.
+        /// </summary>
+        private const string UsePrivateContainerKey = Constants.Configuration.UsePrivateContainer;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AzureBlobFileSystem"/> class.
         /// </summary>
         /// <param name="containerName">The container name.</param>
         /// <param name="rootUrl">The root url.</param>
         /// <param name="connectionString">The connection string.</param>
-        public AzureBlobFileSystem(string containerName, string rootUrl, string connectionString) :
-            this(containerName, rootUrl, connectionString, "365")
+        public AzureBlobFileSystem(string containerName, string rootUrl, string connectionString)
+            : this(containerName, rootUrl, connectionString, "365", "true", "false")
         {
         }
 
@@ -37,14 +66,89 @@ namespace Our.Umbraco.FileSystemProviders.Azure
         /// <param name="connectionString">The connection string.</param>
         /// <param name="maxDays">The maximum number of days to cache blob items for in the browser.</param>
         public AzureBlobFileSystem(string containerName, string rootUrl, string connectionString, string maxDays)
+            : this(containerName, rootUrl, connectionString, maxDays, "true", "false")
         {
-            this.FileSystem = AzureFileSystem.GetInstance(containerName, rootUrl, connectionString, maxDays);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureBlobFileSystem"/> class.
+        /// </summary>
+        /// <param name="containerName">The container name.</param>
+        /// <param name="rootUrl">The root url.</param>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="maxDays">The maximum number of days to cache blob items for in the browser.</param>
+        /// <param name="useDefaultRoute">Whether to use the default "media" route in the url independent of the blob container.</param>
+        public AzureBlobFileSystem(string containerName, string rootUrl, string connectionString, string maxDays, string useDefaultRoute)
+            : this(containerName, rootUrl, connectionString, maxDays, useDefaultRoute, "false")
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureBlobFileSystem"/> class.
+        /// </summary>
+        /// <param name="containerName">The container name.</param>
+        /// <param name="rootUrl">The root url.</param>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="maxDays">The maximum number of days to cache blob items for in the browser.</param>
+        /// <param name="useDefaultRoute">Whether to use the default "media" route in the url independent of the blob container.</param>
+        /// <param name="usePrivateContainer">blob container can be private (no direct access) or public (direct access possible, default)</param>
+        public AzureBlobFileSystem(string containerName, string rootUrl, string connectionString, string maxDays, string useDefaultRoute, string usePrivateContainer)
+        {
+            this.FileSystem = AzureFileSystem.GetInstance(containerName, rootUrl, connectionString, maxDays, useDefaultRoute, usePrivateContainer);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureBlobFileSystem"/> class
+        /// from values in application settings.
+        /// </summary>
+        /// <param name="alias">The alias of the provider</param>
+        public AzureBlobFileSystem(string alias)
+        {
+            string connectionString = ConfigurationManager.AppSettings[$"{ConnectionStringKey}:{alias}"];
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                string rootUrl = ConfigurationManager.AppSettings[$"{RootUrlKey}:{alias}"];
+                if (string.IsNullOrWhiteSpace(rootUrl))
+                {
+                    throw new InvalidOperationException("Azure Storage Root URL is not defined in application settings. The " + RootUrlKey + " property was not defined or is empty.");
+                }
+
+                string containerName = ConfigurationManager.AppSettings[$"{ContainerNameKey}:{alias}"];
+                if (string.IsNullOrWhiteSpace(containerName))
+                {
+                    containerName = "media";
+                }
+
+                string maxDays = ConfigurationManager.AppSettings[$"{MaxDaysKey}:{alias}"];
+                if (string.IsNullOrWhiteSpace(maxDays))
+                {
+                    maxDays = "365";
+                }
+
+                string useDefaultRoute = ConfigurationManager.AppSettings[$"{UseDefaultRootKey}:{alias}"];
+                if (string.IsNullOrWhiteSpace(useDefaultRoute))
+                {
+                    useDefaultRoute = "true";
+                }
+
+                string accessType = ConfigurationManager.AppSettings[$"{UsePrivateContainerKey}:{alias}"];
+                if (string.IsNullOrWhiteSpace(accessType))
+                {
+                    accessType = "true";
+                }
+
+                this.FileSystem = AzureFileSystem.GetInstance(containerName, rootUrl, connectionString, maxDays, useDefaultRoute, accessType);
+            }
+            else
+            {
+                throw new InvalidOperationException("Unable to retrieve the Azure Storage configuration from the application settings. " + ConnectionStringKey + " was not defined or is empty.");
+            }
         }
 
         /// <summary>
         /// Gets a singleton instance of the <see cref="AzureFileSystem"/> class.
         /// </summary>
-        internal AzureFileSystem FileSystem { get; private set; }
+        internal AzureFileSystem FileSystem { get; }
 
         /// <summary>
         /// Adds a file to the file system.

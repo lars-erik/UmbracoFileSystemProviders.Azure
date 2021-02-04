@@ -1,12 +1,7 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="VirtualPathProviderController.cs" company="James Jackson-South">
-//   Copyright (c) James Jackson-South and contributors.
-//   Licensed under the Apache License, Version 2.0.
+﻿// <copyright file="VirtualPathProviderController.cs" company="James Jackson-South, Jeavon Leopold, and contributors">
+// Copyright (c) James Jackson-South, Jeavon Leopold, and contributors. All rights reserved.
+// Licensed under the Apache License, Version 2.0.
 // </copyright>
-// <summary>
-//   Configures the virtual path provider to correctly retrieve and serve resources from the media section.
-// </summary>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace Our.Umbraco.FileSystemProviders.Azure
 {
@@ -27,7 +22,7 @@ namespace Our.Umbraco.FileSystemProviders.Azure
         private const string DisableVirtualPathProviderKey = Constants.Configuration.DisableVirtualPathProviderKey;
 
         /// <summary>
-        /// Overridable method to execute when All resolvers have been initialized but resolution is not 
+        /// Overridable method to execute when All resolvers have been initialized but resolution is not
         /// frozen so they can be modified in this method
         /// </summary>
         /// <param name="umbracoApplication">The current <see cref="UmbracoApplicationBase"/></param>
@@ -38,12 +33,22 @@ namespace Our.Umbraco.FileSystemProviders.Azure
                            && ConfigurationManager.AppSettings[DisableVirtualPathProviderKey]
                                                   .Equals("true", StringComparison.InvariantCultureIgnoreCase);
 
-            IFileSystem fileSystem = FileSystemProviderManager.Current.GetUnderlyingFileSystemProvider("media");
-            bool isAzureBlobFileSystem = fileSystem.GetType() == typeof(AzureBlobFileSystem);
+            IFileSystem fileSystem = FileSystemProviderManager.Current.GetUnderlyingFileSystemProvider(Constants.DefaultMediaRoute);
+            bool isAzureBlobFileSystem = fileSystem is AzureBlobFileSystem;
 
             if (!disable && isAzureBlobFileSystem)
             {
-                FileSystemVirtualPathProvider.ConfigureMedia();
+                AzureFileSystem azureFileSystem = ((AzureBlobFileSystem)fileSystem).FileSystem;
+
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
+                if (azureFileSystem.UseDefaultRoute)
+                {
+                    FileSystemVirtualPathProvider.ConfigureMedia(Constants.DefaultMediaRoute);
+                }
+                else
+                {
+                    FileSystemVirtualPathProvider.ConfigureMedia(azureFileSystem.ContainerName);
+                }
             }
 
             base.ApplicationStarting(umbracoApplication, applicationContext);

@@ -1,26 +1,17 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="FileSystemVirtualPathProviderTests.cs" company="James Jackson-South">
-//   Copyright (c) James Jackson-South and contributors.
-//   Licensed under the Apache License, Version 2.0.
+﻿// <copyright file="FileSystemVirtualPathProviderTests.cs" company="James Jackson-South and contributors">
+// Copyright (c) James Jackson-South and contributors. All rights reserved.
+// Licensed under the Apache License, Version 2.0.
 // </copyright>
-// <summary>
-//   The <see cref="FileSystemVirtualPathProvider" /> tests.
-// </summary>
-// --------------------------------------------------------------------------------------------------------------------
 
 namespace Our.Umbraco.FileSystemProviders.Azure.Tests
 {
     using System;
     using System.IO;
     using System.Web.Hosting;
-
-    using Moq;
-
-    using NUnit.Framework;
-
-    using Our.Umbraco.FileSystemProviders.Azure;
-
+    using Azure;
     using global::Umbraco.Core.IO;
+    using Moq;
+    using NUnit.Framework;
 
     /// <summary>
     /// The <see cref="FileSystemVirtualPathProvider"/> tests.
@@ -36,8 +27,8 @@ namespace Our.Umbraco.FileSystemProviders.Azure.Tests
         {
             // Arrange/Act
             Mock<IFileSystem> fileProvider = new Mock<IFileSystem>();
-            FileSystemVirtualPathProvider provider = new FileSystemVirtualPathProvider("media", new Lazy<IFileSystem>(() => fileProvider.Object));
-            
+            FileSystemVirtualPathProvider provider = new FileSystemVirtualPathProvider(Constants.DefaultMediaRoute, new Lazy<IFileSystem>(() => fileProvider.Object));
+
             // Assert
             Assert.AreEqual(provider.PathPrefix, "/media/");
         }
@@ -53,8 +44,8 @@ namespace Our.Umbraco.FileSystemProviders.Azure.Tests
             FileSystemVirtualPathProvider provider = new FileSystemVirtualPathProvider("media", new Lazy<IFileSystem>(() => fileProvider.Object));
 
             // Act
-            VirtualFile result = provider.GetFile("~/media/1010/media.jpg");
-            
+            VirtualFile result = provider.GetFile("~/media/110/media.jpg");
+
             // Assert
             Assert.IsNotNull(result);
         }
@@ -86,17 +77,17 @@ namespace Our.Umbraco.FileSystemProviders.Azure.Tests
             {
                 // Arrange
                 Mock<IFileSystem> fileProvider = new Mock<IFileSystem>();
-                fileProvider.Setup(p => p.OpenFile("1010/media.jpg")).Returns(stream);
+                fileProvider.Setup(p => p.OpenFile("110/media.jpg")).Returns(stream);
                 FileSystemVirtualPathProvider provider = new FileSystemVirtualPathProvider("media", new Lazy<IFileSystem>(() => fileProvider.Object));
 
                 // Act
-                VirtualFile result = provider.GetFile("~/media/1010/media.jpg");
+                VirtualFile result = provider.GetFile("~/media/110/media.jpg");
 
                 // Assert
                 using (Stream streamResult = result.Open())
                 {
                     Assert.AreEqual(stream, streamResult);
-                    fileProvider.Verify(p => p.OpenFile("1010/media.jpg"), Times.Once);
+                    fileProvider.Verify(p => p.OpenFile("110/media.jpg"), Times.Once);
                 }
             }
         }
@@ -111,14 +102,14 @@ namespace Our.Umbraco.FileSystemProviders.Azure.Tests
             {
                 // Arrange
                 Mock<IFileSystem> fileProvider = new Mock<IFileSystem>();
-                fileProvider.Setup(p => p.OpenFile("1010/media.jpg")).Returns(stream);
+                fileProvider.Setup(p => p.OpenFile("110/media.jpg")).Returns(stream);
                 FileSystemVirtualPathProvider provider = new FileSystemVirtualPathProvider("media", new Lazy<IFileSystem>(() => fileProvider.Object));
 
                 // Act
-                provider.FileExists("~/media/1010/media.jpg");
+                provider.FileExists("~/media/110/media.jpg");
 
                 // Assert
-                fileProvider.Verify(p => p.FileExists("1010/media.jpg"), Times.Once);
+                fileProvider.Verify(p => p.FileExists("110/media.jpg"), Times.Once);
             }
         }
     }
